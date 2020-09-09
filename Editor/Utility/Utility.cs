@@ -51,19 +51,48 @@ namespace HT.TextureProcessor
         {
             return AssetDatabase.FindAssets("t:Texture2D", paths);
         }
-
+        
         /// <summary>
         /// 创建纹理代理
         /// </summary>
         /// <param name="guids">纹理GUID</param>
+        /// <returns>纹理代理集合</returns>
         public static List<TextureAgent> CreataAgents(string[] guids)
         {
             List<TextureAgent> agents = new List<TextureAgent>();
             for (int i = 0; i < guids.Length; i++)
             {
-                agents.Add(new TextureAgent(guids[i]));
+                TextureAgent agent = CreataAgent(guids[i]);
+                if (agent != null)
+                {
+                    agents.Add(agent);
+                }
             }
             return agents;
+        }
+
+        /// <summary>
+        /// 创建纹理代理
+        /// </summary>
+        /// <param name="guid">纹理GUID</param>
+        /// <returns>纹理代理</returns>
+        public static TextureAgent CreataAgent(string guid)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.EndsWith(".png") || path.EndsWith(".PNG"))
+            {
+                return new PngAgent(guid);
+            }
+            if (path.EndsWith(".jpg") || path.EndsWith(".JPG"))
+            {
+                return new JpgAgent(guid);
+            }
+            if (path.EndsWith(".tga") || path.EndsWith(".TGA"))
+            {
+                return new TgaAgent(guid);
+            }
+            LogError("暂不支持此纹理格式：" + path);
+            return null;
         }
 
         /// <summary>
@@ -137,6 +166,44 @@ namespace HT.TextureProcessor
         public static void Log(object message)
         {
             Debug.Log("<color=cyan><b>[Texture Processor]</b></color> " + message);
+        }
+
+        /// <summary>
+        /// 打印警告日志
+        /// </summary>
+        /// <param name="message">日志信息</param>
+        /// <param name="context">日志目标</param>
+        public static void LogWarning(object message, UObject context)
+        {
+            Debug.LogWarning("<color=yellow><b>[Texture Processor]</b></color> " + message, context);
+        }
+
+        /// <summary>
+        /// 打印警告日志
+        /// </summary>
+        /// <param name="message">日志信息</param>
+        public static void LogWarning(object message)
+        {
+            Debug.LogWarning("<color=yellow><b>[Texture Processor]</b></color> " + message);
+        }
+
+        /// <summary>
+        /// 打印错误日志
+        /// </summary>
+        /// <param name="message">日志信息</param>
+        /// <param name="context">日志目标</param>
+        public static void LogError(object message, UObject context)
+        {
+            Debug.LogError("<color=red><b>[Texture Processor]</b></color> " + message, context);
+        }
+
+        /// <summary>
+        /// 打印错误日志
+        /// </summary>
+        /// <param name="message">日志信息</param>
+        public static void LogError(object message)
+        {
+            Debug.LogError("<color=red><b>[Texture Processor]</b></color> " + message);
         }
     }
 }
