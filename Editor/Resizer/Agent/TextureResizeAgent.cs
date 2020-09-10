@@ -1,13 +1,14 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
 namespace HT.TextureProcessor
 {
     /// <summary>
-    /// 纹理代理
+    /// 纹理缩放代理
     /// </summary>
-    public abstract class TextureAgent
+    public abstract class TextureResizeAgent : IDisposable
     {
         /// <summary>
         /// ID
@@ -26,9 +27,9 @@ namespace HT.TextureProcessor
         /// </summary>
         public Texture2D Value;
         /// <summary>
-        /// 纹理名称
+        /// 纹理导入器
         /// </summary>
-        public string Name;
+        public TextureImporter Importer;
         /// <summary>
         /// 纹理导入设置
         /// </summary>
@@ -48,55 +49,71 @@ namespace HT.TextureProcessor
                 return Value != null && (Value.width % 4) == 0 && (Value.height % 4) == 0;
             }
         }
-        
+
         /// <summary>
-        /// 纹理代理
+        /// 纹理缩放代理
         /// </summary>
         /// <param name="guid">纹理GUID</param>
-        public TextureAgent(string guid)
+        /// <param name="path">纹理路径</param>
+        public TextureResizeAgent(string guid, string path)
         {
             GUID = guid;
-            Path = AssetDatabase.GUIDToAssetPath(guid);
+            Path = path;
             FullPath = Application.dataPath + Path.Substring(6);
-            Value = AssetDatabase.LoadAssetAtPath<Texture2D>(Path);
-            Name = Value.name;
-            Settings = new TextureImporterSettings();
-            TextureImporter importer = AssetImporter.GetAtPath(Path) as TextureImporter;
-            importer.ReadTextureSettings(Settings);
-            PlatformSettings = importer.GetDefaultPlatformTextureSettings();
         }
         
         /// <summary>
-        /// 修正纹理尺寸为4的倍数
+        /// 缩放纹理尺寸为4的倍数
         /// </summary>
         /// <returns>处理结果</returns>
-        public virtual TextrueProcessedFeedback ResizeToMultipleOf4()
+        public virtual TextrueResizeFeedback ResizeToMultipleOf4()
         {
+            //加载原纹理
+            LoadValue();
+
             if (IsMultipleOf4)
                 return null;
 
-            Utility.SetReadableEnable(this);
+            //读取原纹理设置
+            ReadSettings();
 
-            TextrueProcessedFeedback feedback = new TextrueProcessedFeedback();
+            //开启纹理的可读、可写模式
+            Utility.SetReadableEnable(Importer);
+
+            //反馈信息：记录原纹理信息
+            TextrueResizeFeedback feedback = new TextrueResizeFeedback();
             feedback.Name = Path;
             feedback.RawStorageMemory = Utility.GetStorageMemorySize(Value);
             feedback.RawRuntimeMemory = Utility.GetRuntimeMemorySize(Value);
+            feedback.RawWidth = Value.width;
+            feedback.RawHeight = Value.height;
 
+            //计算新纹理尺寸
             int widthDiff = Value.width % 4;
             int heightDiff = Value.height % 4;
             int width = widthDiff == 0 ? Value.width : (Value.width + (4 - widthDiff));
             int height = heightDiff == 0 ? Value.height : (Value.height + (4 - heightDiff));
+
+            //构造新纹理
             Texture2D texture = new Texture2D(width, height, GetFormat(), false);
             SetNewTexturePixels(width, height, texture, Value);
             WriteToFile(texture);
+
+            //应用新纹理设置
             ApplySettings();
 
-            Value = AssetDatabase.LoadAssetAtPath<Texture2D>(Path);
+            //加载新纹理
+            LoadValue(true);
+
+            //反馈信息：记录新纹理信息
             feedback.Value = Value;
             feedback.StorageMemory = Utility.GetStorageMemorySize(Value);
             feedback.RuntimeMemory = Utility.GetRuntimeMemorySize(Value);
+            feedback.Width = Value.width;
+            feedback.Height = Value.height;
 
-            Utility.SetReadableDisabled(this);
+            //关闭纹理的可读、可写模式
+            Utility.SetReadableDisabled(Importer);
 
             return feedback;
         }
@@ -105,14 +122,14 @@ namespace HT.TextureProcessor
         /// 获取纹理的格式
         /// </summary>
         /// <returns>格式</returns>
-        public abstract TextureFormat GetFormat();
+        protected abstract TextureFormat GetFormat();
 
         /// <summary>
         /// 获取纹理的编码字节数组
         /// </summary>
         /// <param name="texture">纹理</param>
         /// <returns>字节数组</returns>
-        public abstract byte[] GetEncodeToBytes(Texture2D texture);
+        protected abstract byte[] GetEncodeToBytes(Texture2D texture);
 
         /// <summary>
         /// 设置新纹理的像素
@@ -140,24 +157,72 @@ namespace HT.TextureProcessor
             newTexture.Apply();
         }
 
+        /// <summary>
+        /// 读取原纹理设置
+        /// </summary>
+        private void ReadSettings()
+        {
+            Importer = AssetImporter.GetAtPath(Path) as TextureImporter;
+            Settings = new TextureImporterSettings();
+            Importer.ReadTextureSettings(Settings);
+            PlatformSettings = Importer.GetDefaultPlatformTextureSettings();
+        }
+
+        /// <summary>
+        /// 写入到文件
+        /// </summary>
+        /// <param name="texture">纹理</param>
         private void WriteToFile(Texture2D texture)
         {
             File.WriteAllBytes(FullPath, GetEncodeToBytes(texture));
-            AssetDatabase.Refresh();
+            AssetDatabase.ImportAsset(Path);
         }
 
+        /// <summary>
+        /// 应用新纹理设置
+        /// </summary>
         private void ApplySettings()
         {
-            TextureImporter importer = AssetImporter.GetAtPath(Path) as TextureImporter;
-            importer.SetTextureSettings(Settings);
-            importer.SetPlatformTextureSettings(PlatformSettings);
-            importer.crunchedCompression = true;
-            if (importer.textureType == TextureImporterType.Sprite)
+            Importer = AssetImporter.GetAtPath(Path) as TextureImporter;
+            Importer.SetTextureSettings(Settings);
+            Importer.SetPlatformTextureSettings(PlatformSettings);
+            Importer.crunchedCompression = true;
+            if (Importer.textureType == TextureImporterType.Sprite)
             {
-                importer.spritePackingTag = null;
-                importer.mipmapEnabled = false;
+                Importer.spritePackingTag = null;
+                Importer.mipmapEnabled = false;
             }
-            importer.SaveAndReimport();
+            Importer.SaveAndReimport();
+        }
+
+        /// <summary>
+        /// 加载纹理
+        /// </summary>
+        /// <param name="isReload">当纹理已加载时，是否重新加载</param>
+        internal void LoadValue(bool isReload = false)
+        {
+            if (isReload)
+            {
+                Value = AssetDatabase.LoadAssetAtPath<Texture2D>(Path);
+            }
+            else
+            {
+                if (Value == null)
+                {
+                    Value = AssetDatabase.LoadAssetAtPath<Texture2D>(Path);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 销毁
+        /// </summary>
+        public void Dispose()
+        {
+            Value = null;
+            Importer = null;
+            Settings = null;
+            PlatformSettings = null;
         }
     }
 }

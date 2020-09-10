@@ -3,22 +3,23 @@
 namespace HT.TextureProcessor
 {
     /// <summary>
-    /// Tga格式纹理代理
+    /// Tga格式纹理缩放代理
     /// </summary>
-    public sealed class TgaAgent : TextureAgent
+    public sealed class TgaResizeAgent : TextureResizeAgent
     {
         /// <summary>
-        /// Tga格式纹理代理
+        /// Tga格式纹理缩放代理
         /// </summary>
         /// <param name="guid">纹理GUID</param>
-        public TgaAgent(string guid) : base(guid)
+        /// <param name="path">纹理路径</param>
+        public TgaResizeAgent(string guid, string path) : base(guid, path)
         { }
 
         /// <summary>
         /// 获取纹理的格式
         /// </summary>
         /// <returns>格式</returns>
-        public override TextureFormat GetFormat()
+        protected override TextureFormat GetFormat()
         {
             return TextureFormat.RGB24;
         }
@@ -28,7 +29,7 @@ namespace HT.TextureProcessor
         /// </summary>
         /// <param name="texture">纹理</param>
         /// <returns>字节数组</returns>
-        public override byte[] GetEncodeToBytes(Texture2D texture)
+        protected override byte[] GetEncodeToBytes(Texture2D texture)
         {
             return texture.EncodeToTGA();
         }

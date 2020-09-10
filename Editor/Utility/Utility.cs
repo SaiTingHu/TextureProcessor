@@ -16,30 +16,38 @@ namespace HT.TextureProcessor
         private static MethodInfo _getStorageMemorySize;
 
         /// <summary>
-        /// 修正纹理尺寸为4的倍数（所有纹理）
+        /// 缩放纹理尺寸为4的倍数（所有纹理）
         /// </summary>
         [MenuItem("Tools/Texture Processor/Resize To Multiple Of 4 All")]
         public static void ResizeToMultipleOf4All()
         {
-            TextureProcessor processor = new TextureProcessor();
-            List<TextrueProcessedFeedback> feedbacks = processor.ResizeToMultipleOf4();
-
-            Log("已完成纹理修正 " + feedbacks.Count + " 个！");
-            for (int i = 0; i < feedbacks.Count; i++)
+            if (EditorUtility.DisplayDialog("Prompt", "Are you sure you want to resize to multiple of 4 at all texture2d,this is maybe time consuming!", "Yes", "No"))
             {
-                string message = string.Format("修正：{0}，原始存储内存：<color=red>{1}</color>，原始运行内存：<color=red>{2}</color>，修正存储内存：<color=green>{3}</color>，修正运行内存：<color=green>{4}</color>"
-                    , feedbacks[i].Name, feedbacks[i].RawStorageMemory, feedbacks[i].RawRuntimeMemory, feedbacks[i].StorageMemory, feedbacks[i].RuntimeMemory);
-                Log(message, feedbacks[i].Value);
+                List<TextrueResizeFeedback> feedbacks = null;
+                TimeSpan timeSpan = ExecutionInTimeMonitor(() =>
+                {
+                    TextureResizer resizer = new TextureResizer();
+                    feedbacks = resizer.ResizeToMultipleOf4();
+                    resizer.Dispose();
+                });
+
+                Log("已完成纹理缩放 " + feedbacks.Count + " 个！[耗时：" + timeSpan.ToString(@"hh\:mm\:ss") + "]");
+                for (int i = 0; i < feedbacks.Count; i++)
+                {
+                    Log(feedbacks[i].ToString(), feedbacks[i].Value);
+                }
             }
         }
 
         /// <summary>
-        /// 修正纹理尺寸为4的倍数
+        /// 打开纹理缩放器
         /// </summary>
-        [MenuItem("Tools/Texture Processor/Resize To Multiple Of 4")]
-        public static void ResizeToMultipleOf4()
+        [MenuItem("Tools/Texture Processor/Resizer")]
+        public static void Resizer()
         {
-            
+            TextureResizerWindow window = EditorWindow.GetWindow<TextureResizerWindow>();
+            window.titleContent.image = EditorGUIUtility.IconContent("ContentSizeFitter Icon").image;
+            window.titleContent.text = "Texture Resizer";
         }
 
         /// <summary>
@@ -53,16 +61,16 @@ namespace HT.TextureProcessor
         }
         
         /// <summary>
-        /// 创建纹理代理
+        /// 创建纹理缩放代理
         /// </summary>
         /// <param name="guids">纹理GUID</param>
-        /// <returns>纹理代理集合</returns>
-        public static List<TextureAgent> CreataAgents(string[] guids)
+        /// <returns>纹理缩放代理集合</returns>
+        public static List<TextureResizeAgent> CreataResizeAgents(string[] guids)
         {
-            List<TextureAgent> agents = new List<TextureAgent>();
+            List<TextureResizeAgent> agents = new List<TextureResizeAgent>();
             for (int i = 0; i < guids.Length; i++)
             {
-                TextureAgent agent = CreataAgent(guids[i]);
+                TextureResizeAgent agent = CreataResizeAgent(guids[i]);
                 if (agent != null)
                 {
                     agents.Add(agent);
@@ -72,25 +80,16 @@ namespace HT.TextureProcessor
         }
 
         /// <summary>
-        /// 创建纹理代理
+        /// 创建纹理缩放代理
         /// </summary>
         /// <param name="guid">纹理GUID</param>
-        /// <returns>纹理代理</returns>
-        public static TextureAgent CreataAgent(string guid)
+        /// <returns>纹理缩放代理</returns>
+        public static TextureResizeAgent CreataResizeAgent(string guid)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.EndsWith(".png") || path.EndsWith(".PNG"))
-            {
-                return new PngAgent(guid);
-            }
-            if (path.EndsWith(".jpg") || path.EndsWith(".JPG"))
-            {
-                return new JpgAgent(guid);
-            }
-            if (path.EndsWith(".tga") || path.EndsWith(".TGA"))
-            {
-                return new TgaAgent(guid);
-            }
+            if (path.IsPng()) return new PngResizeAgent(guid, path);
+            if (path.IsJpg()) return new JpgResizeAgent(guid, path);
+            if (path.IsTga()) return new TgaResizeAgent(guid, path);
             LogError("暂不支持此纹理格式：" + path);
             return null;
         }
@@ -124,10 +123,9 @@ namespace HT.TextureProcessor
         /// <summary>
         /// 开启纹理的可读、可写模式
         /// </summary>
-        /// <param name="agent">纹理代理</param>
-        public static void SetReadableEnable(TextureAgent agent)
+        /// <param name="importer">纹理导入器</param>
+        public static void SetReadableEnable(TextureImporter importer)
         {
-            TextureImporter importer = AssetImporter.GetAtPath(agent.Path) as TextureImporter;
             if (!importer.isReadable)
             {
                 importer.isReadable = true;
@@ -138,15 +136,27 @@ namespace HT.TextureProcessor
         /// <summary>
         /// 关闭纹理的可读、可写模式
         /// </summary>
-        /// <param name="agent">纹理代理</param>
-        public static void SetReadableDisabled(TextureAgent agent)
+        /// <param name="importer">纹理导入器</param>
+        public static void SetReadableDisabled(TextureImporter importer)
         {
-            TextureImporter importer = AssetImporter.GetAtPath(agent.Path) as TextureImporter;
             if (importer.isReadable)
             {
                 importer.isReadable = false;
                 importer.SaveAndReimport();
             }
+        }
+
+        /// <summary>
+        /// 在时间监控中执行
+        /// </summary>
+        /// <param name="action">执行的方法</param>
+        /// <returns>消耗的时间</returns>
+        public static TimeSpan ExecutionInTimeMonitor(Action action)
+        {
+            DateTime start = DateTime.Now;
+            action();
+            DateTime end = DateTime.Now;
+            return end - start;
         }
 
         /// <summary>
@@ -204,6 +214,36 @@ namespace HT.TextureProcessor
         public static void LogError(object message)
         {
             Debug.LogError("<color=red><b>[Texture Processor]</b></color> " + message);
+        }
+
+        /// <summary>
+        /// 是否为Png格式纹理
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>是、否</returns>
+        public static bool IsPng(this string path)
+        {
+            return path.EndsWith(".png") || path.EndsWith(".PNG");
+        }
+
+        /// <summary>
+        /// 是否为Jpg格式纹理
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>是、否</returns>
+        public static bool IsJpg(this string path)
+        {
+            return path.EndsWith(".jpg") || path.EndsWith(".JPG") || path.EndsWith(".jpeg") || path.EndsWith(".JPEG");
+        }
+
+        /// <summary>
+        /// 是否为Tga格式纹理
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>是、否</returns>
+        public static bool IsTga(this string path)
+        {
+            return path.EndsWith(".tga") || path.EndsWith(".TGA");
         }
     }
 }
