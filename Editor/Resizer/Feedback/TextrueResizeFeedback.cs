@@ -18,19 +18,19 @@ namespace HT.TextureProcessor
         /// <summary>
         /// 纹理原始存储内存大小
         /// </summary>
-        public string RawStorageMemory;
+        public long RawStorageMemory;
         /// <summary>
         /// 纹理原始运行内存大小
         /// </summary>
-        public string RawRuntimeMemory;
+        public long RawRuntimeMemory;
         /// <summary>
         /// 纹理缩放后存储内存大小
         /// </summary>
-        public string StorageMemory;
+        public long StorageMemory;
         /// <summary>
         /// 纹理缩放后运行内存大小
         /// </summary>
-        public string RuntimeMemory;
+        public long RuntimeMemory;
         /// <summary>
         /// 纹理原始宽度
         /// </summary>
@@ -47,11 +47,52 @@ namespace HT.TextureProcessor
         /// 纹理缩放后高度
         /// </summary>
         public int Height;
+        
+        /// <summary>
+        /// 节约的存储内存大小
+        /// </summary>
+        public long SavedStorageMemory
+        {
+            get
+            {
+                return RawStorageMemory - StorageMemory;
+            }
+        }
+        /// <summary>
+        /// 节约的运行内存大小
+        /// </summary>
+        public long SavedRuntimeMemory
+        {
+            get
+            {
+                return RawRuntimeMemory - RuntimeMemory;
+            }
+        }
+        /// <summary>
+        /// 纹理的原始尺寸（格式：宽x高）
+        /// </summary>
+        public string RawSize
+        {
+            get
+            {
+                return RawWidth + "x" + RawHeight;
+            }
+        }
+        /// <summary>
+        /// 纹理的缩放后尺寸（格式：宽x高）
+        /// </summary>
+        public string Size
+        {
+            get
+            {
+                return Width + "x" + Height;
+            }
+        }
 
         public override string ToString()
         {
-            string message = string.Format("{0}，原始尺寸、存储、运行内存：<color=red>{1}、{2}、{3}</color>，缩放后尺寸、存储、运行内存：<color=green>{4}、{5}、{6}</color>"
-                    , Name, RawWidth + "x" + RawHeight, RawStorageMemory, RawRuntimeMemory, Width + "x" + Height, StorageMemory, RuntimeMemory);
+            string message = string.Format("{0}, Saved Storage Memory [{1}], Saved Runtime Memory [{2}], Raw Size [{3}], Resized Size [{4}]"
+                , Name, Utility.FormatBytes(SavedStorageMemory), Utility.FormatBytes(SavedRuntimeMemory), RawSize, Size);
             return message;
         }
     }

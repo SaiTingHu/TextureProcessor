@@ -21,7 +21,7 @@ namespace HT.TextureProcessor
         [MenuItem("Tools/Texture Processor/Resize To Multiple Of 4 All")]
         public static void ResizeToMultipleOf4All()
         {
-            if (EditorUtility.DisplayDialog("Prompt", "Are you sure you want to resize to multiple of 4 at all texture2d,this is maybe time consuming!", "Yes", "No"))
+            if (EditorUtility.DisplayDialog("Prompt", "Are you sure you want to resize to multiple of 4 at all texture2d? this is maybe time consuming!", "Yes", "No"))
             {
                 List<TextrueResizeFeedback> feedbacks = null;
                 TimeSpan timeSpan = ExecutionInTimeMonitor(() =>
@@ -30,19 +30,14 @@ namespace HT.TextureProcessor
                     feedbacks = resizer.ResizeToMultipleOf4();
                     resizer.Dispose();
                 });
-
-                Log("已完成纹理缩放 " + feedbacks.Count + " 个！[耗时：" + timeSpan.ToString(@"hh\:mm\:ss") + "]");
-                for (int i = 0; i < feedbacks.Count; i++)
-                {
-                    Log(feedbacks[i].ToString(), feedbacks[i].Value);
-                }
+                TextrueResizeFeedbackWindow.OpenWindow(feedbacks, timeSpan);
             }
         }
 
         /// <summary>
         /// 打开纹理缩放器
         /// </summary>
-        [MenuItem("Tools/Texture Processor/Resizer")]
+        [MenuItem("Tools/Texture Processor/Texture Resizer")]
         public static void Resizer()
         {
             TextureResizerWindow window = EditorWindow.GetWindow<TextureResizerWindow>();
@@ -99,7 +94,7 @@ namespace HT.TextureProcessor
         /// </summary>
         /// <param name="texture">纹理</param>
         /// <returns>存储内存大小</returns>
-        public static string GetStorageMemorySize(UObject texture)
+        public static long GetStorageMemorySize(UObject texture)
         {
             if (_getStorageMemorySize == null)
             {
@@ -107,7 +102,7 @@ namespace HT.TextureProcessor
                 _getStorageMemorySize = type.GetMethod("GetStorageMemorySize", BindingFlags.Static | BindingFlags.Public);
             }
 
-            return EditorUtility.FormatBytes((int)_getStorageMemorySize.Invoke(null, new object[] { texture }));
+            return (int)_getStorageMemorySize.Invoke(null, new object[] { texture });
         }
 
         /// <summary>
@@ -115,9 +110,29 @@ namespace HT.TextureProcessor
         /// </summary>
         /// <param name="texture">纹理</param>
         /// <returns>运行内存大小</returns>
-        public static string GetRuntimeMemorySize(UObject texture)
+        public static long GetRuntimeMemorySize(UObject texture)
         {
-            return EditorUtility.FormatBytes(Profiler.GetRuntimeMemorySizeLong(texture));
+            return Profiler.GetRuntimeMemorySizeLong(texture);
+        }
+
+        /// <summary>
+        /// 将字节流转换为显示文本
+        /// </summary>
+        /// <param name="bytes">字节流</param>
+        /// <returns>显示文本</returns>
+        public static string FormatBytes(long bytes)
+        {
+            return EditorUtility.FormatBytes(bytes);
+        }
+
+        /// <summary>
+        /// 将字节流转换为增量显示文本
+        /// </summary>
+        /// <param name="bytes">字节流</param>
+        /// <returns>显示文本</returns>
+        public static string FormatIncrementBytes(long bytes)
+        {
+            return bytes > 0 ? ("↓" + EditorUtility.FormatBytes(bytes)) : ("↑" + EditorUtility.FormatBytes(-bytes));
         }
 
         /// <summary>

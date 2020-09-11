@@ -51,6 +51,24 @@ namespace HT.TextureProcessor
         }
 
         /// <summary>
+        /// 纹理的尺寸（格式：宽x高）
+        /// </summary>
+        public string Size
+        {
+            get
+            {
+                if (Value == null)
+                {
+                    return "0x0";
+                }
+                else
+                {
+                    return Value.width + "x" + Value.height;
+                }
+            }
+        }
+
+        /// <summary>
         /// 纹理缩放代理
         /// </summary>
         /// <param name="guid">纹理GUID</param>
