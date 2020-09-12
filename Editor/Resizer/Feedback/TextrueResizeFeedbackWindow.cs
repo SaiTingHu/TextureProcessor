@@ -29,9 +29,10 @@ namespace HT.TextureProcessor
             window.titleContent.text = "Textrue Resize Feedback";
             window._feedbacks = feedbacks;
             window._timeSpan = timeSpan;
+            window.IndexStart = 0;
             window.CalculateTotal();
         }
-
+        
         private List<TextrueResizeFeedback> _feedbacks;
         private TimeSpan _timeSpan;
         private Vector2 _scroll;
@@ -41,7 +42,39 @@ namespace HT.TextureProcessor
         private long _runtimeMemoryTotal = 0;
         private long _savedStorageMemoryTotal = 0;
         private long _savedRuntimeMemoryTotal = 0;
-        
+        private int _indexStart = 0;
+        private int _showNumber = 100;
+
+        /// <summary>
+        /// 索引起点
+        /// </summary>
+        private int IndexStart
+        {
+            get
+            {
+                return _indexStart;
+            }
+            set
+            {
+                _indexStart = value;
+                if (_indexStart + _showNumber > _feedbacks.Count)
+                {
+                    _indexStart = _feedbacks.Count - _showNumber;
+                }
+                if (_indexStart < 0)
+                {
+                    _indexStart = 0;
+                }
+
+                IndexCount = _indexStart + _showNumber;
+                if (IndexCount > _feedbacks.Count) IndexCount = _feedbacks.Count;
+            }
+        }
+        /// <summary>
+        /// 索引终点
+        /// </summary>
+        private int IndexCount { get; set; } = 0;
+
         private void OnGUI()
         {
             OnTotalGUI();
@@ -117,7 +150,7 @@ namespace HT.TextureProcessor
         private void OnDetailGUI()
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Space(10);
+            GUILayout.Space(40);
             GUILayout.Label("Texture", GUILayout.Width(120));
             GUILayout.Label("Raw Storage", GUILayout.Width(100));
             GUILayout.Label("Raw Runtime", GUILayout.Width(100));
@@ -128,13 +161,14 @@ namespace HT.TextureProcessor
             GUILayout.Label("Saved Storage", GUILayout.Width(100));
             GUILayout.Label("Saved Runtime", GUILayout.Width(100));
             GUILayout.EndHorizontal();
-
+            
             GUILayout.BeginVertical("HelpBox");
-            _scroll = GUILayout.BeginScrollView(_scroll);
+            Vector2 scroll = GUILayout.BeginScrollView(_scroll);
 
-            for (int i = 0; i < _feedbacks.Count; i++)
+            for (int i = IndexStart; i < IndexCount; i++)
             {
                 GUILayout.BeginHorizontal();
+                GUILayout.Label(i + ".", GUILayout.Width(30));
                 EditorGUILayout.ObjectField(_feedbacks[i].Value, typeof(Texture2D), false, GUILayout.Width(120));
                 GUI.color = Color.red;
                 GUILayout.Label(Utility.FormatBytes(_feedbacks[i].RawStorageMemory), GUILayout.Width(100));
@@ -153,6 +187,32 @@ namespace HT.TextureProcessor
 
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
+
+            //视野滚动
+            if (scroll != _scroll)
+            {
+                //视野往上滚
+                if (scroll.y < _scroll.y)
+                {
+                    IndexStart -= 1;
+                    //如果还未抵达第一个元素，则将视野值下移半个单位（60为一个单位），以保证视野始终处于滚动状态
+                    if (IndexStart > 0)
+                    {
+                        scroll.y += 30;
+                    }
+                }
+                //视野往下滚
+                else
+                {
+                    IndexStart += 1;
+                    //如果还未抵达最后一个元素，则将视野值上移半个单位（60为一个单位），以保证视野始终处于滚动状态
+                    if (IndexCount < _feedbacks.Count)
+                    {
+                        scroll.y -= 30;
+                    }
+                }
+                _scroll = scroll;
+            }
         }
         
         /// <summary>
