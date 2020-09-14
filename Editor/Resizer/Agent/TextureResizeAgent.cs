@@ -158,17 +158,17 @@ namespace HT.TextureProcessor
         /// <param name="oldTexture">旧纹理</param>
         protected virtual void SetNewTexturePixels(int width, int height, Texture2D newTexture, Texture2D oldTexture)
         {
-            for (int i = 0; i < height; i++)
+            for (int h = 0; h < height; h++)
             {
-                for (int j = 0; j < width; j++)
+                for (int w = 0; w < width; w++)
                 {
-                    if (i < oldTexture.height && j < oldTexture.width)
+                    if (h < oldTexture.height && w < oldTexture.width)
                     {
-                        newTexture.SetPixel(j, i, oldTexture.GetPixel(j, i));
+                        newTexture.SetPixel(w, h, oldTexture.GetPixel(w, h));
                     }
                     else
                     {
-                        newTexture.SetPixel(j, i, Color.clear);
+                        newTexture.SetPixel(w, h, Color.clear);
                     }
                 }
             }

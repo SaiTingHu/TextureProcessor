@@ -33,5 +33,48 @@ namespace HT.TextureProcessor
         {
             return texture.EncodeToJPG();
         }
+
+        /// <summary>
+        /// 设置新纹理的像素
+        /// </summary>
+        /// <param name="width">宽</param>
+        /// <param name="height">高</param>
+        /// <param name="newTexture">新纹理</param>
+        /// <param name="oldTexture">旧纹理</param>
+        protected override void SetNewTexturePixels(int width, int height, Texture2D newTexture, Texture2D oldTexture)
+        {
+            for (int h = 0; h < height; h++)
+            {
+                for (int w = 0; w < width; w++)
+                {
+                    if (h < oldTexture.height && w < oldTexture.width)
+                    {
+                        newTexture.SetPixel(w, h, oldTexture.GetPixel(w, h));
+                    }
+                    else
+                    {
+                        bool greaterW = w >= oldTexture.width;
+                        bool greaterH = h >= oldTexture.height;
+                        if (greaterH && greaterW)
+                        {
+                            newTexture.SetPixel(w, h, oldTexture.GetPixel(oldTexture.width - 1, oldTexture.height - 1));
+                        }
+                        else if (greaterH && !greaterW)
+                        {
+                            newTexture.SetPixel(w, h, oldTexture.GetPixel(w, oldTexture.height - 1));
+                        }
+                        else if (!greaterH && greaterW)
+                        {
+                            newTexture.SetPixel(w, h, oldTexture.GetPixel(oldTexture.width - 1, h));
+                        }
+                        else
+                        {
+                            newTexture.SetPixel(w, h, Color.clear);
+                        }
+                    }
+                }
+            }
+            newTexture.Apply();
+        }
     }
 }
