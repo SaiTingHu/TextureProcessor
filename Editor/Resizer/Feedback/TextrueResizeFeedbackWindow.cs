@@ -9,7 +9,7 @@ namespace HT.TextureProcessor
     /// <summary>
     /// 纹理缩放处理反馈信息窗口
     /// </summary>
-    public sealed class TextrueResizeFeedbackWindow : EditorWindow
+    internal sealed class TextrueResizeFeedbackWindow : EditorWindow
     {
         /// <summary>
         /// 打开窗口
@@ -27,6 +27,7 @@ namespace HT.TextureProcessor
             TextrueResizeFeedbackWindow window = GetWindow<TextrueResizeFeedbackWindow>();
             window.titleContent.image = EditorGUIUtility.IconContent("console.infoicon.sml").image;
             window.titleContent.text = "Textrue Resize Feedback";
+            window.minSize = window.maxSize = new Vector2(1050, 665);
             window._feedbacks = feedbacks;
             window._timeSpan = timeSpan;
             window.IndexStart = 0;
@@ -43,7 +44,7 @@ namespace HT.TextureProcessor
         private long _savedStorageMemoryTotal = 0;
         private long _savedRuntimeMemoryTotal = 0;
         private int _indexStart = 0;
-        private int _showNumber = 100;
+        private int _showNumber = 50;
 
         /// <summary>
         /// 索引起点
@@ -150,8 +151,7 @@ namespace HT.TextureProcessor
         private void OnDetailGUI()
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Space(40);
-            GUILayout.Label("Texture", GUILayout.Width(120));
+            GUILayout.Label("Texture", GUILayout.Width(160));
             GUILayout.Label("Raw Storage", GUILayout.Width(100));
             GUILayout.Label("Raw Runtime", GUILayout.Width(100));
             GUILayout.Label("Raw Size", GUILayout.Width(100));
@@ -195,7 +195,7 @@ namespace HT.TextureProcessor
                 if (scroll.y < _scroll.y)
                 {
                     IndexStart -= 1;
-                    //如果还未抵达第一个元素，则将视野值下移半个单位（60为一个单位），以保证视野始终处于滚动状态
+                    //如果还未抵达第一个元素，则将视野值下移半个单位（60为一个单位），以防止滚动条抵达最顶部（导致无法再往上滚动视野）
                     if (IndexStart > 0)
                     {
                         scroll.y += 30;
@@ -205,7 +205,7 @@ namespace HT.TextureProcessor
                 else
                 {
                     IndexStart += 1;
-                    //如果还未抵达最后一个元素，则将视野值上移半个单位（60为一个单位），以保证视野始终处于滚动状态
+                    //如果还未抵达最后一个元素，则将视野值上移半个单位（60为一个单位），以防止滚动条抵达最底部（导致无法再往下滚动视野）
                     if (IndexCount < _feedbacks.Count)
                     {
                         scroll.y -= 30;

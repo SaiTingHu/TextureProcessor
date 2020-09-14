@@ -5,7 +5,7 @@ namespace HT.TextureProcessor
     /// <summary>
     /// Tga格式纹理缩放代理
     /// </summary>
-    public sealed class TgaResizeAgent : TextureResizeAgent
+    internal sealed class TgaResizeAgent : TextureResizeAgent
     {
         /// <summary>
         /// Tga格式纹理缩放代理

@@ -8,7 +8,7 @@ namespace HT.TextureProcessor
     /// <summary>
     /// 纹理缩放代理
     /// </summary>
-    public abstract class TextureResizeAgent : IDisposable
+    internal abstract class TextureResizeAgent : IDisposable
     {
         /// <summary>
         /// ID
@@ -217,7 +217,7 @@ namespace HT.TextureProcessor
         /// 加载纹理
         /// </summary>
         /// <param name="isReload">当纹理已加载时，是否重新加载</param>
-        internal void LoadValue(bool isReload = false)
+        public void LoadValue(bool isReload = false)
         {
             if (isReload)
             {

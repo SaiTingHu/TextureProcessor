@@ -5,7 +5,7 @@ namespace HT.TextureProcessor
     /// <summary>
     /// Jpg格式纹理缩放代理
     /// </summary>
-    public sealed class JpgResizeAgent : TextureResizeAgent
+    internal sealed class JpgResizeAgent : TextureResizeAgent
     {
         /// <summary>
         /// Jpg格式纹理缩放代理

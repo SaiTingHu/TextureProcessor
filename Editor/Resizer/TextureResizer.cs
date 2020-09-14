@@ -53,6 +53,37 @@ namespace HT.TextureProcessor
         }
 
         /// <summary>
+        /// 缩放纹理尺寸为4的倍数
+        /// </summary>
+        /// <param name="isResizePng">是否处理png格式纹理</param>
+        /// <param name="isResizeJpg">是否处理jpg格式纹理</param>
+        /// <param name="isResizeTga">是否处理tga格式纹理</param>
+        /// <returns>处理的反馈信息</returns>
+        public List<TextrueResizeFeedback> ResizeToMultipleOf4(bool isResizePng, bool isResizeJpg, bool isResizeTga)
+        {
+            List<TextrueResizeFeedback> feedbacks = new List<TextrueResizeFeedback>();
+            for (int i = 0; i < Agents.Count; i++)
+            {
+                if (!isResizePng && Agents[i] is PngResizeAgent) continue;
+                if (!isResizeJpg && Agents[i] is JpgResizeAgent) continue;
+                if (!isResizeTga && Agents[i] is TgaResizeAgent) continue;
+
+                TextrueResizeFeedback feedback = Agents[i].ResizeToMultipleOf4();
+                if (feedback != null)
+                {
+                    feedbacks.Add(feedback);
+                }
+
+                if (EditorUtility.DisplayCancelableProgressBar("Textrue Resize", Agents[i].Path, (float)i / Agents.Count))
+                {
+                    break;
+                }
+            }
+            EditorUtility.ClearProgressBar();
+            return feedbacks;
+        }
+
+        /// <summary>
         /// 销毁
         /// </summary>
         public void Dispose()

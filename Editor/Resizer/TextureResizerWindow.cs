@@ -8,17 +8,33 @@ namespace HT.TextureProcessor
     /// <summary>
     /// 纹理缩放器窗口
     /// </summary>
-    public sealed class TextureResizerWindow : EditorWindow
+    internal sealed class TextureResizerWindow : EditorWindow
     {
+        /// <summary>
+        /// 打开窗口
+        /// </summary>
+        public static void OpenWindow()
+        {
+            TextureResizerWindow window = GetWindow<TextureResizerWindow>();
+            window.titleContent.image = EditorGUIUtility.IconContent("ContentSizeFitter Icon").image;
+            window.titleContent.text = "Texture Resizer";
+            window.minSize = window.maxSize = new Vector2(835, 665);
+        }
+
         private DefaultAsset _folder;
         private string _folderPath;
         private TextureResizer _textureResizer;
+        private List<TextureResizeAgent> _agents;
         private Vector2 _scroll;
         private int _rawNumber = 0;
         private int _textureWidth = 120;
+        private int _textureCount = 48;
+        private int _currentPage = 0;
+        private int _totalPage = 0;
         private string _nameFilter = "";
-        private bool _isDisplayStandard = false;
-        private bool _isDisplayRaw = true;
+        private bool _isResizePng = true;
+        private bool _isResizeJpg = true;
+        private bool _isResizeTga = true;
         private GUIContent _nameGC = new GUIContent();
         private GUIContent _standardGC = new GUIContent();
         private GUIContent _sizeGC = new GUIContent();
@@ -39,7 +55,7 @@ namespace HT.TextureProcessor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("About", EditorStyles.toolbarButton))
             {
-                //Application.OpenURL("https://wanderer.blog.csdn.net/article/details/102971712");
+                //Application.OpenURL("");
             }
             GUILayout.EndHorizontal();
         }
@@ -63,12 +79,15 @@ namespace HT.TextureProcessor
                     _textureResizer.Agents[i].LoadValue();
                 }
                 EditorUtility.ClearProgressBar();
+                _nameFilter = "";
+                ResetDisplayAgents();
             }
             GUI.enabled = _textureResizer != null;
             if (GUILayout.Button("Clear", EditorStyles.miniButtonRight, GUILayout.Width(50)))
             {
                 _textureResizer.Dispose();
                 _textureResizer = null;
+                _agents = null;
                 _nameFilter = "";
             }
             GUI.enabled = true;
@@ -83,81 +102,92 @@ namespace HT.TextureProcessor
             if (_textureResizer != null)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("All Texture In");
-                GUI.color = Color.cyan;
-                GUILayout.Label("[" + _folderPath + "]");
-                GUI.color = Color.white;
+                GUILayout.Label("All Texture In: " + _folderPath);
                 GUILayout.FlexibleSpace();
-                _nameFilter = EditorGUILayout.TextField("", _nameFilter, "SearchTextField", GUILayout.Width(180));
+                string nameFilter = EditorGUILayout.TextField("", _nameFilter, "SearchTextField", GUILayout.Width(180));
+                if (nameFilter != _nameFilter)
+                {
+                    _nameFilter = nameFilter;
+                    ResetDisplayAgents();
+                }
                 if (GUILayout.Button("", _nameFilter != "" ? "SearchCancelButton" : "SearchCancelButtonEmpty", GUILayout.Width(20)))
                 {
-                    _nameFilter = "";
-                    GUI.FocusControl(null);
+                    if (_nameFilter != "")
+                    {
+                        _nameFilter = "";
+                        ResetDisplayAgents();
+                        GUI.FocusControl(null);
+                    }
                 }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Total - Raw");
-                GUI.color = Color.cyan;
-                GUILayout.Label("[" + _textureResizer.Agents.Count + " - " + _rawNumber + "]");
-                GUI.color = Color.white;
-                _isDisplayStandard = GUILayout.Toggle(_isDisplayStandard, "Standard", EditorStyles.miniButtonLeft);
-                _isDisplayRaw = GUILayout.Toggle(_isDisplayRaw, "Raw", EditorStyles.miniButtonMid);
-                GUI.enabled = _rawNumber > 0;
-                if (GUILayout.Button("Resize [" + _rawNumber + "]", EditorStyles.miniButtonRight))
+                GUILayout.Label("Total: [" + _agents.Count + "]");
+                GUILayout.Space(20);
+                GUILayout.Label("Current Page Raw: [" + _rawNumber + "]");
+                GUILayout.FlexibleSpace();
+                _isResizePng = GUILayout.Toggle(_isResizePng, "png");
+                _isResizeJpg = GUILayout.Toggle(_isResizeJpg, "jpg");
+                _isResizeTga = GUILayout.Toggle(_isResizeTga, "tga");
+                if (GUILayout.Button("Resize To Multiple Of 4", EditorStyles.miniButton))
                 {
                     if (EditorUtility.DisplayDialog("Prompt", "Are you sure you want to resize to multiple of 4 at all raw texture2d? this is maybe time consuming!", "Yes", "No"))
                     {
                         List<TextrueResizeFeedback> feedbacks = null;
                         TimeSpan timeSpan = Utility.ExecutionInTimeMonitor(() =>
                         {
-                            feedbacks = _textureResizer.ResizeToMultipleOf4();
+                            feedbacks = _textureResizer.ResizeToMultipleOf4(_isResizePng, _isResizeJpg, _isResizeTga);
                         });
                         TextrueResizeFeedbackWindow.OpenWindow(feedbacks, timeSpan);
                     }
                 }
-                GUI.enabled = true;
-                GUILayout.FlexibleSpace();
-                _textureWidth = EditorGUILayout.IntSlider(_textureWidth, 60, 180, GUILayout.Width(200));
                 GUILayout.EndHorizontal();
                 
                 GUILayout.BeginVertical("HelpBox");
                 _scroll = GUILayout.BeginScrollView(_scroll);
-
-                int column = (int)(position.width / (_textureWidth + 10));
-                int indexOffset = 0;
                 _rawNumber = 0;
-                for (int i = 0; i < _textureResizer.Agents.Count; i += column)
+                for (int i = 0; i < _textureCount; i += 6)
                 {
                     GUILayout.BeginHorizontal();
-                    for (int j = 0; j < column; j++)
+                    for (int j = 0; j < 6; j++)
                     {
-                        int index = i + j + indexOffset;
-                        if (index < _textureResizer.Agents.Count)
+                        int index = _currentPage * _textureCount + i + j;
+                        if (index < _agents.Count)
                         {
-                            TextureResizeAgent agent = _textureResizer.Agents[index];
+                            TextureResizeAgent agent = _agents[index];
                             if (agent.Value == null)
                             {
-                                _textureResizer.Agents.RemoveAt(index);
+                                RemoveAgent(agent);
                                 j--;
                                 continue;
                             }
                             bool isStandard = agent.IsMultipleOf4;
                             if (!isStandard) _rawNumber += 1;
-                            if (!IsDisplay(agent, isStandard))
-                            {
-                                j--;
-                                indexOffset++;
-                                continue;
-                            }
                             OnTextureGUI(agent, isStandard);
                         }
                     }
                     GUILayout.EndHorizontal();
                 }
-
                 GUILayout.EndScrollView();
                 GUILayout.EndVertical();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Prev Page", EditorStyles.miniButton))
+                {
+                    PrevPage();
+                }
+                GUILayout.Label((_currentPage + 1) + "/" + _totalPage);
+                if (GUILayout.Button("Next Page", EditorStyles.miniButton))
+                {
+                    NextPage();
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+
+                GUILayout.Space(5);
+
+                KeyboardEvent();
             }
             else
             {
@@ -200,24 +230,122 @@ namespace HT.TextureProcessor
                 MouseRightMenu(agent, GUILayoutUtility.GetLastRect());
             }
         }
+        
+        /// <summary>
+        /// 重置当前显示的纹理代理
+        /// </summary>
+        private void ResetDisplayAgents()
+        {
+            if (_agents == null)
+            {
+                _agents = new List<TextureResizeAgent>();
+            }
+            _agents.Clear();
+
+            if (_nameFilter == "")
+            {
+                for (int i = 0; i < _textureResizer.Agents.Count; i++)
+                {
+                    if (_textureResizer.Agents[i].Value == null)
+                    {
+                        _textureResizer.Agents.RemoveAt(i);
+                        i--;
+                        continue;
+                    }
+                    _agents.Add(_textureResizer.Agents[i]);
+                }
+            }
+            else
+            {
+                string nameFilter = _nameFilter.ToLower();
+                for (int i = 0; i < _textureResizer.Agents.Count; i++)
+                {
+                    if (_textureResizer.Agents[i].Value == null)
+                    {
+                        _textureResizer.Agents.RemoveAt(i);
+                        i--;
+                        continue;
+                    }
+                    if (_textureResizer.Agents[i].Value.name.ToLower().Contains(nameFilter))
+                    {
+                        _agents.Add(_textureResizer.Agents[i]);
+                    }
+                }
+            }
+
+            ResetPage();
+        }
 
         /// <summary>
-        /// 是否显示纹理代理
+        /// 重置当前页数
+        /// </summary>
+        /// <param name="isResetCurrent">是否重置当前页</param>
+        private void ResetPage(bool isResetCurrent = true)
+        {
+            _totalPage = _agents.Count / _textureCount + (_agents.Count % _textureCount > 0 ? 1 : 0);
+            if (isResetCurrent)
+            {
+                _currentPage = 0;
+            }
+            else
+            {
+                _currentPage = _currentPage >= _totalPage ? (_totalPage - 1) : _currentPage;
+            }
+        }
+
+        /// <summary>
+        /// 上一页
+        /// </summary>
+        private void PrevPage()
+        {
+            if (_currentPage > 0)
+            {
+                _currentPage -= 1;
+            }
+        }
+
+        /// <summary>
+        /// 下一页
+        /// </summary>
+        private void NextPage()
+        {
+            if (_currentPage < _totalPage - 1)
+            {
+                _currentPage += 1;
+            }
+        }
+
+        /// <summary>
+        /// 移除纹理代理
         /// </summary>
         /// <param name="agent">纹理代理</param>
-        /// <param name="isStandard">是否为标准纹理</param>
-        /// <returns>是否显示</returns>
-        private bool IsDisplay(TextureResizeAgent agent, bool isStandard)
+        private void RemoveAgent(TextureResizeAgent agent)
         {
-            if (!_isDisplayStandard && isStandard)
+            _agents.Remove(agent);
+            _textureResizer.Agents.Remove(agent);
+
+            ResetPage(false);
+        }
+
+        /// <summary>
+        /// 键盘事件处理
+        /// </summary>
+        private void KeyboardEvent()
+        {
+            if (Event.current != null && Event.current.rawType == EventType.KeyDown)
             {
-                return false;
+                switch (Event.current.keyCode)
+                {
+                    case KeyCode.LeftArrow:
+                        PrevPage();
+                        GUI.changed = true;
+                        break;
+                    case KeyCode.RightArrow:
+                        NextPage();
+                        GUI.changed = true;
+                        break;
+                }
             }
-            if (!_isDisplayRaw && !isStandard)
-            {
-                return false;
-            }
-            return agent.Value.name.Contains(_nameFilter);
         }
 
         /// <summary>
@@ -234,7 +362,7 @@ namespace HT.TextureProcessor
                     GenericMenu gm = new GenericMenu();
                     gm.AddItem(new GUIContent("Exclude this texture"), false, () =>
                     {
-                        _textureResizer.Agents.Remove(agent);
+                        RemoveAgent(agent);
                     });
                     gm.ShowAsContext();
                     Event.current.Use();

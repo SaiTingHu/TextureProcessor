@@ -40,9 +40,7 @@ namespace HT.TextureProcessor
         [MenuItem("Tools/Texture Processor/Texture Resizer")]
         public static void Resizer()
         {
-            TextureResizerWindow window = EditorWindow.GetWindow<TextureResizerWindow>();
-            window.titleContent.image = EditorGUIUtility.IconContent("ContentSizeFitter Icon").image;
-            window.titleContent.text = "Texture Resizer";
+            TextureResizerWindow.OpenWindow();
         }
 
         /// <summary>
@@ -50,17 +48,17 @@ namespace HT.TextureProcessor
         /// </summary>
         /// <param name="paths">查找路径</param>
         /// <returns>所有纹理GUID</returns>
-        public static string[] FindTextures(string[] paths)
+        internal static string[] FindTextures(string[] paths)
         {
             return AssetDatabase.FindAssets("t:Texture2D", paths);
         }
-        
+
         /// <summary>
         /// 创建纹理缩放代理
         /// </summary>
         /// <param name="guids">纹理GUID</param>
         /// <returns>纹理缩放代理集合</returns>
-        public static List<TextureResizeAgent> CreataResizeAgents(string[] guids)
+        internal static List<TextureResizeAgent> CreataResizeAgents(string[] guids)
         {
             List<TextureResizeAgent> agents = new List<TextureResizeAgent>();
             for (int i = 0; i < guids.Length; i++)
@@ -79,7 +77,7 @@ namespace HT.TextureProcessor
         /// </summary>
         /// <param name="guid">纹理GUID</param>
         /// <returns>纹理缩放代理</returns>
-        public static TextureResizeAgent CreataResizeAgent(string guid)
+        internal static TextureResizeAgent CreataResizeAgent(string guid)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
             if (path.IsPng()) return new PngResizeAgent(guid, path);
