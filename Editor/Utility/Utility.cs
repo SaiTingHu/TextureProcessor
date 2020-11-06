@@ -18,7 +18,7 @@ namespace HT.TextureProcessor
         /// <summary>
         /// 缩放纹理尺寸为4的倍数（所有纹理）
         /// </summary>
-        [MenuItem("Tools/Texture Processor/Resize To Multiple Of 4 All")]
+        [MenuItem("HT/Texture Processor/Resize To Multiple Of 4 All")]
         public static void ResizeToMultipleOf4All()
         {
             if (EditorUtility.DisplayDialog("Prompt", "Are you sure you want to resize to multiple of 4 at all texture2d? this is maybe time consuming!", "Yes", "No"))
@@ -37,7 +37,7 @@ namespace HT.TextureProcessor
         /// <summary>
         /// 打开纹理缩放器
         /// </summary>
-        [MenuItem("Tools/Texture Processor/Texture Resizer")]
+        [MenuItem("HT/Texture Processor/Texture Resizer")]
         public static void Resizer()
         {
             TextureResizerWindow.OpenWindow();

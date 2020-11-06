@@ -38,7 +38,15 @@ namespace HT.TextureProcessor
         private GUIContent _nameGC = new GUIContent();
         private GUIContent _standardGC = new GUIContent();
         private GUIContent _sizeGC = new GUIContent();
-        
+        private GUIContent _helpGC;
+
+        private void OnEnable()
+        {
+            _helpGC = new GUIContent();
+            _helpGC = EditorGUIUtility.IconContent("_Help");
+            _helpGC.tooltip = "Help";
+        }
+
         private void OnGUI()
         {
             OnTitleGUI();
@@ -53,7 +61,7 @@ namespace HT.TextureProcessor
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("About", EditorStyles.toolbarButton))
+            if (GUILayout.Button(_helpGC, "IconButton"))
             {
                 //Application.OpenURL("");
             }
