@@ -43,7 +43,7 @@ namespace HT.TextureProcessor
         private void OnEnable()
         {
             _helpGC = new GUIContent();
-            _helpGC = EditorGUIUtility.IconContent("_Help");
+            _helpGC.image = EditorGUIUtility.IconContent("_Help").image;
             _helpGC.tooltip = "Help";
         }
 
@@ -52,6 +52,15 @@ namespace HT.TextureProcessor
             OnTitleGUI();
             OnFolderGUI();
             OnAgentsGUI();
+        }
+
+        private void OnDestroy()
+        {
+            if (_textureResizer != null)
+            {
+                _textureResizer.Dispose();
+                _textureResizer = null;
+            }
         }
 
         /// <summary>

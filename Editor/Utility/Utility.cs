@@ -44,6 +44,15 @@ namespace HT.TextureProcessor
         }
 
         /// <summary>
+        /// 打开纹理绘画器
+        /// </summary>
+        [MenuItem("HT/Texture Processor/Texture Painter")]
+        public static void Painter()
+        {
+            TexturePainterWindow.OpenWindow();
+        }
+
+        /// <summary>
         /// 查找纹理
         /// </summary>
         /// <param name="paths">查找路径</param>
@@ -83,10 +92,10 @@ namespace HT.TextureProcessor
             if (path.IsPng()) return new PngResizeAgent(guid, path);
             if (path.IsJpg()) return new JpgResizeAgent(guid, path);
             if (path.IsTga()) return new TgaResizeAgent(guid, path);
-            LogError("暂不支持此纹理格式：" + path);
+            LogError("暂不支持此种文件格式的纹理：" + path);
             return null;
         }
-
+        
         /// <summary>
         /// 获取纹理占用的存储内存大小
         /// </summary>
@@ -171,6 +180,154 @@ namespace HT.TextureProcessor
             DateTime end = DateTime.Now;
             return end - start;
         }
+        
+        /// <summary>
+        /// 从纹理的图像源中获取图像颜色
+        /// </summary>
+        /// <param name="colors">图像源</param>
+        /// <param name="width">纹理宽度</param>
+        /// <param name="x">横向坐标</param>
+        /// <param name="y">纵向坐标</param>
+        /// <returns>颜色</returns>
+        public static Color GetPixel(this Color[] colors, int width, int x, int y)
+        {
+            return colors[y * width + x];
+        }
+
+        /// <summary>
+        /// 从纹理中获取指定区域的图像颜色
+        /// </summary>
+        /// <param name="texture">纹理</param>
+        /// <param name="area">区域</param>
+        /// <returns>颜色</returns>
+        public static Color[] GetPixels(this Texture2D texture, RectInt area)
+        {
+            Color[] colors = new Color[area.width * area.height];
+            for (int h = 0; h < area.height; h++)
+            {
+                for (int w = 0; w < area.width; w++)
+                {
+                    int index = h * area.width + w;
+                    colors[index] = texture.GetPixel(area.x + w, area.y + h);
+                }
+            }
+            return colors;
+        }
+
+        /// <summary>
+        /// 灰度化
+        /// </summary>
+        /// <param name="color">原始颜色</param>
+        /// <returns>灰度化后的颜色</returns>
+        public static Color Grayscale(this Color color)
+        {
+            float grayscale = color.grayscale;
+            return new Color(grayscale, grayscale, grayscale, color.a);
+        }
+        
+        /// <summary>
+        /// 纹理的指定行是否为空白像素
+        /// </summary>
+        /// <param name="texture">纹理</param>
+        /// <param name="row">行号</param>
+        /// <returns>是否为空白像素</returns>
+        public static bool IsBlankRow(this Texture2D texture, int row)
+        {
+            for (int i = 0; i < texture.width; i++)
+            {
+                if (!Mathf.Approximately(texture.GetPixel(i, row).a, 0f))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 纹理的指定列是否为空白像素
+        /// </summary>
+        /// <param name="texture">纹理</param>
+        /// <param name="column">列号</param>
+        /// <returns>是否为空白像素</returns>
+        public static bool IsBlankColumn(this Texture2D texture, int column)
+        {
+            for (int i = 0; i < texture.height; i++)
+            {
+                if (!Mathf.Approximately(texture.GetPixel(column, i).a, 0f))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 纹理是否支持绘画器
+        /// </summary>
+        /// <param name="texture">纹理</param>
+        /// <returns>是否支持</returns>
+        public static bool IsSupportPaint(this Texture2D texture)
+        {
+            switch (texture.format)
+            {
+                case TextureFormat.ARGB32:
+                case TextureFormat.RGBA32:
+                case TextureFormat.BGRA32:
+                case TextureFormat.RGB24:
+                case TextureFormat.Alpha8:
+                case TextureFormat.RGBAFloat:
+                case TextureFormat.RGBAHalf:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// 获取纹理文件格式
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>文件格式</returns>
+        public static FileFormat GetFileFormat(this string path)
+        {
+            if (path.IsJpg())
+                return FileFormat.JPG;
+            if (path.IsPng())
+                return FileFormat.PNG;
+            if (path.IsTga())
+                return FileFormat.TGA;
+            return FileFormat.Unknown;
+        }
+
+        /// <summary>
+        /// 是否为Png格式纹理
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>是、否</returns>
+        public static bool IsPng(this string path)
+        {
+            return path.EndsWith(".png") || path.EndsWith(".PNG");
+        }
+
+        /// <summary>
+        /// 是否为Jpg格式纹理
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>是、否</returns>
+        public static bool IsJpg(this string path)
+        {
+            return path.EndsWith(".jpg") || path.EndsWith(".JPG") || path.EndsWith(".jpeg") || path.EndsWith(".JPEG");
+        }
+
+        /// <summary>
+        /// 是否为Tga格式纹理
+        /// </summary>
+        /// <param name="path">纹理路径</param>
+        /// <returns>是、否</returns>
+        public static bool IsTga(this string path)
+        {
+            return path.EndsWith(".tga") || path.EndsWith(".TGA");
+        }
 
         /// <summary>
         /// 打印普通日志
@@ -227,36 +384,6 @@ namespace HT.TextureProcessor
         public static void LogError(object message)
         {
             Debug.LogError("<color=red><b>[Texture Processor]</b></color> " + message);
-        }
-
-        /// <summary>
-        /// 是否为Png格式纹理
-        /// </summary>
-        /// <param name="path">纹理路径</param>
-        /// <returns>是、否</returns>
-        public static bool IsPng(this string path)
-        {
-            return path.EndsWith(".png") || path.EndsWith(".PNG");
-        }
-
-        /// <summary>
-        /// 是否为Jpg格式纹理
-        /// </summary>
-        /// <param name="path">纹理路径</param>
-        /// <returns>是、否</returns>
-        public static bool IsJpg(this string path)
-        {
-            return path.EndsWith(".jpg") || path.EndsWith(".JPG") || path.EndsWith(".jpeg") || path.EndsWith(".JPEG");
-        }
-
-        /// <summary>
-        /// 是否为Tga格式纹理
-        /// </summary>
-        /// <param name="path">纹理路径</param>
-        /// <returns>是、否</returns>
-        public static bool IsTga(this string path)
-        {
-            return path.EndsWith(".tga") || path.EndsWith(".TGA");
         }
     }
 }
