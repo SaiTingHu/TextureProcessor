@@ -47,7 +47,10 @@ namespace HT.TextureProcessor
         /// 绘画纹理
         /// </summary>
         internal Texture2D PaintValue;
-        
+
+        private Color[] _rawPixels;
+        private Color[] _targetPixels;
+
         /// <summary>
         /// 是否是一个空的绘画器
         /// </summary>
@@ -276,6 +279,196 @@ namespace HT.TextureProcessor
         }
 
         /// <summary>
+        /// 亮度调节
+        /// </summary>
+        /// <param name="brightness">亮度</param>
+        public void AdjustBrightness(float brightness)
+        {
+            if (_rawPixels == null || _rawPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                Color[] rawColors = PaintValue.GetPixels();
+                _rawPixels = new Color[rawColors.Length];
+                for (int i = 0; i < rawColors.Length; i++)
+                {
+                    _rawPixels[i] = rawColors[i];
+                }
+            }
+
+            Color[] colors = PaintValue.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                Color color = _rawPixels[i] * brightness;
+                color.a = _rawPixels[i].a;
+                colors[i] = color;
+            }
+            PaintValue.SetPixels(colors);
+            PaintValue.Apply();
+        }
+
+        /// <summary>
+        /// 亮度调节保存
+        /// </summary>
+        public void AdjustBrightnessSave()
+        {
+            _rawPixels = null;
+        }
+
+        /// <summary>
+        /// 亮度调节还原
+        /// </summary>
+        public void AdjustBrightnessRestore()
+        {
+            if (_rawPixels == null || _rawPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                _rawPixels = null;
+                return;
+            }
+
+            Color[] colors = PaintValue.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = _rawPixels[i];
+            }
+            PaintValue.SetPixels(colors);
+            PaintValue.Apply();
+            _rawPixels = null;
+        }
+
+        /// <summary>
+        /// 饱和度调节
+        /// </summary>
+        /// <param name="saturation">饱和度</param>
+        public void AdjustSaturation(float saturation)
+        {
+            if (_rawPixels == null || _rawPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                Color[] rawColors = PaintValue.GetPixels();
+                _rawPixels = new Color[rawColors.Length];
+                for (int i = 0; i < rawColors.Length; i++)
+                {
+                    _rawPixels[i] = rawColors[i];
+                }
+            }
+            if (_targetPixels == null || _targetPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                Color[] rawColors = PaintValue.GetPixels();
+                _targetPixels = new Color[rawColors.Length];
+                for (int i = 0; i < rawColors.Length; i++)
+                {
+                    _targetPixels[i] = rawColors[i].SaturationMax();
+                }
+            }
+
+            Color[] colors = PaintValue.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = Color.Lerp(_rawPixels[i], _targetPixels[i], saturation);
+            }
+            PaintValue.SetPixels(colors);
+            PaintValue.Apply();
+        }
+
+        /// <summary>
+        /// 饱和度调节保存
+        /// </summary>
+        public void AdjustSaturationSave()
+        {
+            _rawPixels = null;
+            _targetPixels = null;
+        }
+
+        /// <summary>
+        /// 饱和度调节还原
+        /// </summary>
+        public void AdjustSaturationRestore()
+        {
+            if (_rawPixels == null || _rawPixels.Length != (PaintValue.width * PaintValue.height)
+                || _targetPixels == null || _targetPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                _rawPixels = null;
+                _targetPixels = null;
+                return;
+            }
+
+            Color[] colors = PaintValue.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = _rawPixels[i];
+            }
+            PaintValue.SetPixels(colors);
+            PaintValue.Apply();
+            _rawPixels = null;
+            _targetPixels = null;
+        }
+
+        /// <summary>
+        /// 明暗度调节
+        /// </summary>
+        /// <param name="value">明暗度</param>
+        public void AdjustValue(float value)
+        {
+            if (_rawPixels == null || _rawPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                Color[] rawColors = PaintValue.GetPixels();
+                _rawPixels = new Color[rawColors.Length];
+                for (int i = 0; i < rawColors.Length; i++)
+                {
+                    _rawPixels[i] = rawColors[i];
+                }
+            }
+            if (_targetPixels == null || _targetPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                Color[] rawColors = PaintValue.GetPixels();
+                _targetPixels = new Color[rawColors.Length];
+                for (int i = 0; i < rawColors.Length; i++)
+                {
+                    _targetPixels[i] = rawColors[i].ValueMax();
+                }
+            }
+
+            Color[] colors = PaintValue.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = Color.Lerp(_rawPixels[i], _targetPixels[i], value);
+            }
+            PaintValue.SetPixels(colors);
+            PaintValue.Apply();
+        }
+
+        /// <summary>
+        /// 明暗度调节保存
+        /// </summary>
+        public void AdjustValueSave()
+        {
+            _rawPixels = null;
+            _targetPixels = null;
+        }
+
+        /// <summary>
+        /// 明暗度调节还原
+        /// </summary>
+        public void AdjustValueRestore()
+        {
+            if (_rawPixels == null || _rawPixels.Length != (PaintValue.width * PaintValue.height)
+                || _targetPixels == null || _targetPixels.Length != (PaintValue.width * PaintValue.height))
+            {
+                _rawPixels = null;
+                _targetPixels = null;
+                return;
+            }
+
+            Color[] colors = PaintValue.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = _rawPixels[i];
+            }
+            PaintValue.SetPixels(colors);
+            PaintValue.Apply();
+            _rawPixels = null;
+            _targetPixels = null;
+        }
+
+        /// <summary>
         /// 左右镜像
         /// </summary>
         public void LeftRightMirror()
@@ -348,6 +541,9 @@ namespace HT.TextureProcessor
                 UObject.DestroyImmediate(PaintValue);
                 PaintValue = null;
             }
+
+            _rawPixels = null;
+            _targetPixels = null;
         }
 
         /// <summary>

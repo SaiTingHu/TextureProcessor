@@ -215,7 +215,7 @@ namespace HT.TextureProcessor
         }
 
         /// <summary>
-        /// 灰度化
+        /// 灰度化（饱和度最低的颜色）
         /// </summary>
         /// <param name="color">原始颜色</param>
         /// <returns>灰度化后的颜色</returns>
@@ -224,7 +224,39 @@ namespace HT.TextureProcessor
             float grayscale = color.grayscale;
             return new Color(grayscale, grayscale, grayscale, color.a);
         }
-        
+
+        /// <summary>
+        /// 此颜色饱和度最高的颜色
+        /// </summary>
+        /// <param name="color">原始颜色</param>
+        /// <returns>饱和度最高的颜色</returns>
+        public static Color SaturationMax(this Color color)
+        {
+            float h, s, v;
+            float a = color.a;
+            Color.RGBToHSV(color, out h, out s, out v);
+            s = 1;
+            color = Color.HSVToRGB(h, s, v);
+            color.a = a;
+            return color;
+        }
+
+        /// <summary>
+        /// 此颜色明暗度最高的颜色
+        /// </summary>
+        /// <param name="color">原始颜色</param>
+        /// <returns>明暗度最高的颜色</returns>
+        public static Color ValueMax(this Color color)
+        {
+            float h, s, v;
+            float a = color.a;
+            Color.RGBToHSV(color, out h, out s, out v);
+            v = 1;
+            color = Color.HSVToRGB(h, s, v);
+            color.a = a;
+            return color;
+        }
+
         /// <summary>
         /// 纹理的指定行是否为空白像素
         /// </summary>

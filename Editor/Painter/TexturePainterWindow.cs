@@ -22,10 +22,22 @@ namespace HT.TextureProcessor
         private bool _isTextureDragging = false;
         private float _textureScale = 1;
         private Rect _textureRect = Rect.zero;
-        private Rect _menuRect = new Rect(10, 30, 120, 200);
+        private Rect _textureBGRect = Rect.zero;
+        private Rect _toolkitRect = new Rect(10, 30, 120, 230);
         private GUIContent _helpGC;
         private Texture2D _textureBG;
-        private Rect _textureBGRect = Rect.zero;
+        
+        private bool _isAdjustBrightness = false;
+        private Rect _adjustBrightnessRect = new Rect(135, 150, 160, 60);
+        private float _brightness = 1;
+
+        private bool _isAdjustSaturation = false;
+        private Rect _adjustSaturationRect = new Rect(135, 170, 160, 60);
+        private float _saturation = 0;
+
+        private bool _isAdjustValue = false;
+        private Rect _adjustValueRect = new Rect(135, 190, 160, 60);
+        private float _value = 0;
 
         /// <summary>
         /// 当前的绘画器是否是空的
@@ -76,7 +88,8 @@ namespace HT.TextureProcessor
             GUI.DrawTextureWithTexCoords(_textureRect, _textureBG, _textureBGRect);
             GUI.DrawTexture(_textureRect, _texturePainter.PaintValue);
 
-            GUILayout.BeginArea(_menuRect, "Toolkit", "Window");
+            #region Toolkit
+            GUILayout.BeginArea(_toolkitRect, "Toolkit", "Window");
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Size: " + _texturePainter.PaintValue.width + "x" + _texturePainter.PaintValue.height);
@@ -120,14 +133,77 @@ namespace HT.TextureProcessor
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("LR-Mirror", EditorStyles.miniButton))
+            bool value = _isAdjustBrightness;
+            if (GUILayout.Toggle(_isAdjustBrightness, "Brightness", EditorStyles.miniButton) != value)
             {
-                _texturePainter.LeftRightMirror();
+                _isAdjustBrightness = true;
+
+                if (_isAdjustSaturation)
+                {
+                    _texturePainter.AdjustSaturationRestore();
+                    _isAdjustSaturation = false;
+                    _saturation = 0;
+                }
+
+                if (_isAdjustValue)
+                {
+                    _texturePainter.AdjustValueRestore();
+                    _isAdjustValue = false;
+                    _value = 0;
+                }
             }
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("TB-Mirror", EditorStyles.miniButton))
+            value = _isAdjustSaturation;
+            if (GUILayout.Toggle(_isAdjustSaturation, "Saturation", EditorStyles.miniButton) != value)
+            {
+                _isAdjustSaturation = true;
+
+                if (_isAdjustBrightness)
+                {
+                    _texturePainter.AdjustBrightnessRestore();
+                    _isAdjustBrightness = false;
+                    _brightness = 1;
+                }
+
+                if (_isAdjustValue)
+                {
+                    _texturePainter.AdjustValueRestore();
+                    _isAdjustValue = false;
+                    _value = 0;
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            value = _isAdjustValue;
+            if (GUILayout.Toggle(_isAdjustValue, "Value", EditorStyles.miniButton) != value)
+            {
+                _isAdjustValue = true;
+
+                if (_isAdjustSaturation)
+                {
+                    _texturePainter.AdjustSaturationRestore();
+                    _isAdjustSaturation = false;
+                    _saturation = 0;
+                }
+
+                if (_isAdjustBrightness)
+                {
+                    _texturePainter.AdjustBrightnessRestore();
+                    _isAdjustBrightness = false;
+                    _brightness = 1;
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("MirrorLR", EditorStyles.miniButtonLeft))
+            {
+                _texturePainter.LeftRightMirror();
+            }
+            if (GUILayout.Button("MirrorTB", EditorStyles.miniButtonRight))
             {
                 _texturePainter.TopBottomMirror();
             }
@@ -161,6 +237,109 @@ namespace HT.TextureProcessor
             GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
+            #endregion
+
+            #region Adjust Brightness
+            if (_isAdjustBrightness)
+            {
+                GUILayout.BeginArea(_adjustBrightnessRect, "Brightness", "Window");
+
+                GUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                float brightness = EditorGUILayout.Slider(_brightness, 0.1f, 1.9f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _brightness = brightness;
+                    _texturePainter.AdjustBrightness(_brightness);
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Sure", EditorStyles.miniButtonLeft))
+                {
+                    _texturePainter.AdjustBrightnessSave();
+                    _isAdjustBrightness = false;
+                    _brightness = 1;
+                }
+                if (GUILayout.Button("Cancel", EditorStyles.miniButtonRight))
+                {
+                    _texturePainter.AdjustBrightnessRestore();
+                    _isAdjustBrightness = false;
+                    _brightness = 1;
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.EndArea();
+            }
+            #endregion
+
+            #region Adjust Saturation
+            if (_isAdjustSaturation)
+            {
+                GUILayout.BeginArea(_adjustSaturationRect, "Saturation", "Window");
+
+                GUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                float saturation = EditorGUILayout.Slider(_saturation, 0f, 1f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _saturation = saturation;
+                    _texturePainter.AdjustSaturation(_saturation);
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Sure", EditorStyles.miniButtonLeft))
+                {
+                    _texturePainter.AdjustSaturationSave();
+                    _isAdjustSaturation = false;
+                    _saturation = 0;
+                }
+                if (GUILayout.Button("Cancel", EditorStyles.miniButtonRight))
+                {
+                    _texturePainter.AdjustSaturationRestore();
+                    _isAdjustSaturation = false;
+                    _saturation = 0;
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.EndArea();
+            }
+            #endregion
+
+            #region Adjust Value
+            if (_isAdjustValue)
+            {
+                GUILayout.BeginArea(_adjustValueRect, "Value", "Window");
+
+                GUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                float ivalue = EditorGUILayout.Slider(_value, 0f, 1f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _value = ivalue;
+                    _texturePainter.AdjustValue(_value);
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Sure", EditorStyles.miniButtonLeft))
+                {
+                    _texturePainter.AdjustValueSave();
+                    _isAdjustValue = false;
+                    _value = 0;
+                }
+                if (GUILayout.Button("Cancel", EditorStyles.miniButtonRight))
+                {
+                    _texturePainter.AdjustValueRestore();
+                    _isAdjustValue = false;
+                    _value = 0;
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.EndArea();
+            }
+            #endregion
         }
 
         /// <summary>
@@ -247,6 +426,8 @@ namespace HT.TextureProcessor
                             {
                                 _texturePainter.OpenTexture(texture, anchor);
                             }
+                            _isAdjustBrightness = false;
+                            _isAdjustSaturation = false;
                         }
                         else
                         {
