@@ -72,7 +72,7 @@ namespace HT.TextureProcessor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(_helpGC, "IconButton"))
             {
-                //Application.OpenURL("");
+                Application.OpenURL("https://wanderer.blog.csdn.net/article/details/109770759");
             }
             GUILayout.EndHorizontal();
         }
