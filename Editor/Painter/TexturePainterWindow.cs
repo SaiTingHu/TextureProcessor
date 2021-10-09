@@ -23,20 +23,20 @@ namespace HT.TextureProcessor
         private float _textureScale = 1;
         private Rect _textureRect = Rect.zero;
         private Rect _textureBGRect = Rect.zero;
-        private Rect _toolkitRect = new Rect(10, 30, 120, 230);
+        private Rect _toolkitRect = new Rect(10, 30, 120, 240);
         private GUIContent _helpGC;
         private Texture2D _textureBG;
         
         private bool _isAdjustBrightness = false;
-        private Rect _adjustBrightnessRect = new Rect(135, 150, 160, 60);
+        private Rect _adjustBrightnessRect = new Rect(135, 150, 160, 65);
         private float _brightness = 1;
 
         private bool _isAdjustSaturation = false;
-        private Rect _adjustSaturationRect = new Rect(135, 170, 160, 60);
+        private Rect _adjustSaturationRect = new Rect(135, 170, 160, 65);
         private float _saturation = 0;
 
         private bool _isAdjustValue = false;
-        private Rect _adjustValueRect = new Rect(135, 190, 160, 60);
+        private Rect _adjustValueRect = new Rect(135, 190, 160, 65);
         private float _value = 0;
 
         /// <summary>
