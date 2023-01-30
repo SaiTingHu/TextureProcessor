@@ -142,7 +142,7 @@ namespace HT.TextureProcessor
             Color[] oldColors = PaintValue.GetPixels();
 
             //构造新纹理
-            PaintValue.Resize(width, height);
+            PaintValue.Reinitialize(width, height);
             if (Format == FileFormat.JPG)
             {
                 for (int h = 0; h < height; h++)
@@ -258,7 +258,7 @@ namespace HT.TextureProcessor
             //构造新纹理
             RectInt area = new RectInt(startColumn, startRow, endColumn - startColumn + 1, endRow - startRow + 1);
             Color[] newColors = PaintValue.GetPixels(area);
-            PaintValue.Resize(area.width, area.height);
+            PaintValue.Reinitialize(area.width, area.height);
             PaintValue.SetPixels(newColors);
             PaintValue.Apply();
         }
